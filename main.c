@@ -1,0 +1,396 @@
+#include <zephyr/kernel.h>
+#include <zephyr/sys/printk.h>
+#include <zephyr/device.h>
+#include <zephyr/drivers/gpio.h>
+#include <zephyr/drivers/uart.h>
+
+//+1p suoritus: Lisää ajoitustietoja
+// Led pin configurations
+static const struct gpio_dt_spec red   = GPIO_DT_SPEC_GET(DT_ALIAS(led0), gpios);
+static const struct gpio_dt_spec green = GPIO_DT_SPEC_GET(DT_ALIAS(led1), gpios);
+
+// Button configs
+#define BUTTON_0 DT_ALIAS(sw0)
+#define BUTTON_1 DT_ALIAS(sw1)
+#define BUTTON_2 DT_ALIAS(sw2)
+#define BUTTON_3 DT_ALIAS(sw3)
+#define BUTTON_4 DT_ALIAS(sw4)
+
+static const struct gpio_dt_spec button_0 = GPIO_DT_SPEC_GET_OR(BUTTON_0, gpios, {0});
+static const struct gpio_dt_spec button_1 = GPIO_DT_SPEC_GET_OR(BUTTON_1, gpios, {0});
+static const struct gpio_dt_spec button_2 = GPIO_DT_SPEC_GET_OR(BUTTON_2, gpios, {0});
+static const struct gpio_dt_spec button_3 = GPIO_DT_SPEC_GET_OR(BUTTON_3, gpios, {0});
+static const struct gpio_dt_spec button_4 = GPIO_DT_SPEC_GET_OR(BUTTON_4, gpios, {0});
+
+static struct gpio_callback button_0_data;
+static struct gpio_callback button_1_data;
+static struct gpio_callback button_2_data;
+static struct gpio_callback button_3_data;
+static struct gpio_callback button_4_data;
+
+// FIFO puskuri sekvenssille
+K_FIFO_DEFINE(seq_fifo);
+
+// Dispatcher–valo synkronointiin
+K_MUTEX_DEFINE(disp_mutex);
+K_CONDVAR_DEFINE(red_cv);
+K_CONDVAR_DEFINE(yellow_cv);
+K_CONDVAR_DEFINE(green_cv);
+
+// Release-signaali dispatcherille
+K_CONDVAR_DEFINE(release_cv);
+
+struct seq_item {
+    void *fifo_reserved;  // Zephyr FIFO header
+    char color;           // 'R', 'Y', 'G'
+    int duration_ms;      // aika ms
+};
+
+
+int led_state = 0;         // 0=red, 1=yellow, 2=green, 4=pause, 5=yellow_blink
+int prev_led_state = 0;
+bool manual_red = false;
+bool manual_yellow = false;
+bool manual_green = false;
+bool yellow_blink_mode = false;
+
+
+struct seq_item *current_item = NULL;
+
+#define MAX_SEQ_LEN 20
+static struct seq_item *seq_buffer[MAX_SEQ_LEN];
+static int seq_len = 0;
+static uint32_t button_press_count = 0;
+
+
+#define STACKSIZE 500
+#define PRIORITY 5
+#define UART_BUF_SIZE 64
+
+void red_led_task(void *, void *, void*);
+void yellow_led_task(void *, void *, void*);
+void green_led_task(void *, void *, void*);
+void yellow_blink_task(void *, void *, void*);
+void uart_rx_task(void *, void *, void*);
+void dispatcher_task(void *, void *, void*);
+
+K_THREAD_DEFINE(red_thread,STACKSIZE,red_led_task,NULL,NULL,NULL,PRIORITY,0,0);
+K_THREAD_DEFINE(yellow_thread,STACKSIZE,yellow_led_task,NULL,NULL,NULL,PRIORITY,0,0);
+K_THREAD_DEFINE(green_thread,STACKSIZE,green_led_task,NULL,NULL,NULL,PRIORITY,0,0);
+K_THREAD_DEFINE(yellow_blink_thread,STACKSIZE,yellow_blink_task,NULL,NULL,NULL,PRIORITY,0,0);
+K_THREAD_DEFINE(uart_rx_thread, STACKSIZE, uart_rx_task, NULL, NULL, NULL, PRIORITY, 0, 0);
+K_THREAD_DEFINE(dispatcher_thread, STACKSIZE, dispatcher_task, NULL, NULL, NULL, PRIORITY, 0, 0);
+
+// ************* Button interrupt handlers *************
+// Nyt napit kirjoittavat yhden merkin FIFO:hin (sekvenssi = yksittäinen kirjain)
+//Aajoitustietoa buttoneihin konsolissa näkyy tiedot
+// Button 1 - Pause 
+void button_0_handler(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
+{
+    button_press_count++;
+    printk("Button pressed! Total count = %u\n", button_press_count);   
+    printk("Button 1 pressed - Pause\n");
+    if (led_state == 4) {
+        led_state = prev_led_state;
+        printk("Pause OFF, return to state %d\n", led_state);
+    } else {
+        prev_led_state = led_state;
+        led_state = 4;
+        printk("Pause ON\n");
+    }
+}
+
+// Button 2 - pusketaan 'R' FIFO:iin
+void button_1_handler(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
+{
+    button_press_count++;
+    printk("Button pressed! Total count = %u\n", button_press_count);
+    struct seq_item *it = k_malloc(sizeof(*it));
+    if (it) {
+        it->color = 'R';
+        k_fifo_put(&seq_fifo, it);
+        printk("Button 2 pressed - queued R\n");
+    } else {
+        printk("Button 2: malloc failed\n");
+    }
+}
+
+// Button 3 - pusketaan 'Y'
+void button_2_handler(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
+{
+    button_press_count++;
+    printk("Button pressed! Total count = %u\n", button_press_count);
+    struct seq_item *it = k_malloc(sizeof(*it));
+    if (it) {
+        it->color = 'Y';
+        k_fifo_put(&seq_fifo, it);
+        printk("Button 3 pressed - queued Y\n");
+    } else {
+        printk("Button 3: malloc failed\n");
+    }
+}
+
+// Button 4 - pusketaan 'G'
+void button_3_handler(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
+{
+    button_press_count++;
+    printk("Button pressed! Total count = %u\n", button_press_count);
+    struct seq_item *it = k_malloc(sizeof(*it));
+    if (it) {
+        it->color = 'G';
+        k_fifo_put(&seq_fifo, it);
+        printk("Button 4 pressed - queued G\n");
+    } else {
+        printk("Button 4: malloc failed\n");
+    }
+}
+
+// Button 5 - yellow blink mode (pidin tämän erillisenä)
+void button_4_handler(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
+{
+    button_press_count++;
+    printk("Button pressed! Total count = %u\n", button_press_count);
+        if (!yellow_blink_mode) {
+        prev_led_state = led_state;
+        led_state = 5;
+        yellow_blink_mode = true;
+        printk("Button 5 pressed - Yellow blink mode ON\n");
+    } else {
+        yellow_blink_mode = false;
+        led_state = prev_led_state;
+        gpio_pin_set_dt(&red, 0);
+        gpio_pin_set_dt(&green, 0);
+        printk("Button 5 pressed - Yellow blink mode OFF\n");
+    }
+}
+
+// ************* Init functions *************
+int init_led(void) {
+    int ret;
+    ret = gpio_pin_configure_dt(&red, GPIO_OUTPUT_ACTIVE);
+    if (ret < 0) return ret;
+    gpio_pin_set_dt(&red, 0);
+
+    ret = gpio_pin_configure_dt(&green, GPIO_OUTPUT_ACTIVE);
+    if (ret < 0) return ret;
+    gpio_pin_set_dt(&green, 0);
+
+    printk("Ledit alustettu ok\n");
+    return 0;
+}
+
+int init_button(const struct gpio_dt_spec *button, struct gpio_callback *callback,
+                gpio_callback_handler_t handler, const char *name) {
+    int ret;
+
+    if (!gpio_is_ready_dt(button)) {
+        printk("Error: %s not ready\n", name);
+        return -1;
+    }
+
+    ret = gpio_pin_configure_dt(button, GPIO_INPUT);
+    if (ret != 0) return -1;
+
+    ret = gpio_pin_interrupt_configure_dt(button, GPIO_INT_EDGE_TO_ACTIVE);
+    if (ret != 0) return -1;
+
+    gpio_init_callback(callback, handler, BIT(button->pin));
+    gpio_add_callback(button->port, callback);
+
+    printk("%s OK\n", name);
+    return 0;
+}
+
+int init_all_buttons(void) {
+    if (init_button(&button_0, &button_0_data, button_0_handler, "Button 1") != 0) return -1;
+    if (init_button(&button_1, &button_1_data, button_1_handler, "Button 2") != 0) return -1;
+    if (init_button(&button_2, &button_2_data, button_2_handler, "Button 3") != 0) return -1;
+    if (init_button(&button_3, &button_3_data, button_3_handler, "Button 4") != 0) return -1;
+    if (init_button(&button_4, &button_4_data, button_4_handler, "Button 5") != 0) return -1;
+    return 0;
+}
+
+// ************* Main *************
+int main(void)
+{
+    int rc;
+    rc = init_led();
+    if (rc) {
+        printk("LED init failed %d\n", rc);
+    }
+    rc = init_all_buttons();
+    if (rc) {
+        printk("Button init failed %d\n", rc);
+    }
+
+    printk("App started\n");
+    return 0;
+}
+
+// ************* Tasks *************
+void red_led_task(void *p1, void *p2, void *p3) {
+    while (1) {
+        k_mutex_lock(&disp_mutex, K_FOREVER);
+        k_condvar_wait(&red_cv, &disp_mutex, K_FOREVER);
+
+        // Dispatcher asettaa globaalin muuttujan current_item
+        struct seq_item *item = current_item;
+        k_mutex_unlock(&disp_mutex);
+
+        gpio_pin_set_dt(&red, 1);
+        printk("RED ON for %d ms\n", item->duration_ms);
+        k_sleep(K_MSEC(item->duration_ms));
+        gpio_pin_set_dt(&red, 0);
+        printk("RED OFF\n");
+
+        k_condvar_signal(&release_cv);
+    }
+}
+
+void yellow_led_task(void *p1, void *p2, void *p3) {
+    while (1) {
+        k_mutex_lock(&disp_mutex, K_FOREVER);
+        k_condvar_wait(&yellow_cv, &disp_mutex, K_FOREVER);
+
+        // Dispatcher asettaa globaalin muuttujan current_item
+        struct seq_item *item = current_item;
+        k_mutex_unlock(&disp_mutex);
+
+        // Sytytetään punainen + vihreä yhtä aikaa = keltainen
+        gpio_pin_set_dt(&red, 1);
+        gpio_pin_set_dt(&green, 1);
+        printk("YELLOW ON for %d ms\n", item->duration_ms);
+        k_sleep(K_MSEC(item->duration_ms));
+
+        // Sammutetaan molemmat
+        gpio_pin_set_dt(&red, 0);
+        gpio_pin_set_dt(&green, 0);
+        printk("YELLOW OFF\n");
+
+        k_condvar_signal(&release_cv);
+    }
+}
+
+void green_led_task(void *p1, void *p2, void *p3) {
+    while (1) {
+        k_mutex_lock(&disp_mutex, K_FOREVER);
+        k_condvar_wait(&green_cv, &disp_mutex, K_FOREVER);
+
+        // Dispatcher asettaa globaalin muuttujan current_item
+        struct seq_item *item = current_item;
+        k_mutex_unlock(&disp_mutex);
+
+        gpio_pin_set_dt(&green, 1);
+        printk("GREEN ON for %d ms\n", item->duration_ms);
+        k_sleep(K_MSEC(item->duration_ms));
+        gpio_pin_set_dt(&green, 0);
+        printk("GREEN OFF\n");
+
+        k_condvar_signal(&release_cv);
+    }
+}
+
+void yellow_blink_task(void *p1, void *p2, void *p3) {
+    while (true) {
+        if (led_state == 5 && yellow_blink_mode) {
+            gpio_pin_set_dt(&red, 1);
+            gpio_pin_set_dt(&green, 1);
+            printk("YELLOW BLINK ON\n");
+            k_sleep(K_MSEC(500));
+            gpio_pin_set_dt(&red, 0);
+            gpio_pin_set_dt(&green, 0);
+            printk("YELLOW BLINK OFF\n");
+            k_sleep(K_MSEC(500));
+        }
+        k_msleep(100);
+    }
+}
+//UART-sekvenssin käsittelyaika Mitataan, kuinka kauan menee yhden UART-komennon käsittelyyn.
+void uart_rx_task(void *p1, void *p2, void *p3) {
+    const struct device *uart_dev = DEVICE_DT_GET(DT_NODELABEL(uart0));
+    char buf[UART_BUF_SIZE];
+    int idx = 0;
+
+    if (!device_is_ready(uart_dev)) {
+        printk("UART device not ready\n");
+        return;
+    }
+
+    while (true) {
+        unsigned char c;
+        if (uart_poll_in(uart_dev, &c) == 0) {
+            if (c == '\r' || c == '\n') {
+                buf[idx] = '\0';
+                idx = 0;
+
+                // --- Aikaseuranta alkaa ---
+                uint32_t start = k_uptime_get_32();
+
+                char cmd;
+                int val;
+                if (sscanf(buf, "%c,%d", &cmd, &val) == 2) {
+                    if (cmd == 'T') {
+                        printk("RX: Repeat sequence %d times\n", val);
+                        for (int r = 0; r < val; r++) {
+                            for (int i = 0; i < seq_len; i++) {
+                                struct seq_item *orig = seq_buffer[i];
+                                struct seq_item *copy = k_malloc(sizeof(*copy));
+                                if (copy) {
+                                    copy->color = orig->color;
+                                    copy->duration_ms = orig->duration_ms;
+                                    k_fifo_put(&seq_fifo, copy);
+                                }
+                            }
+                        }
+                        seq_len = 0;
+                    } else {
+                        struct seq_item *item = k_malloc(sizeof(*item));
+                        if (item) {
+                            item->color = cmd;
+                            item->duration_ms = val;
+                            k_fifo_put(&seq_fifo, item);
+                            if (seq_len < MAX_SEQ_LEN) {
+                                seq_buffer[seq_len++] = item;
+                            }
+                            printk("RX: %c for %d ms queued\n", cmd, val);
+                        }
+                    }
+                }
+
+                // --- Aikaseuranta loppuu ---
+                uint32_t end = k_uptime_get_32();
+                printk("UART command handled in %u ms\n", end - start);
+
+            } else {
+                if (idx < UART_BUF_SIZE - 1) {
+                    buf[idx++] = c;
+                }
+            }
+        }
+        k_msleep(10);
+    }
+}
+
+
+
+void dispatcher_task(void *p1, void *p2, void *p3) {
+    while (1) {
+        struct seq_item *item = k_fifo_get(&seq_fifo, K_FOREVER);
+        if (!item) continue;
+
+        k_mutex_lock(&disp_mutex, K_FOREVER);
+        current_item = item;
+
+        switch (item->color) {
+            case 'R': k_condvar_signal(&red_cv);    break;
+            case 'Y': k_condvar_signal(&yellow_cv); break;
+            case 'G': k_condvar_signal(&green_cv);  break;
+        }
+
+        k_condvar_wait(&release_cv, &disp_mutex, K_FOREVER);
+        current_item = NULL;
+        k_mutex_unlock(&disp_mutex);
+
+        k_free(item);
+    }
+}
