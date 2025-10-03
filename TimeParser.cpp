@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "TimeParser.h"
+#include <ctype.h>
 
 // time format: HHMMSS (6 characters)
 int time_parse(const char *time) {
@@ -16,7 +17,7 @@ int time_parse(const char *time) {
     // Tarkistetaan että kaikki merkit ovat numeroita
     for (int i = 0; i < 6; i++) {
         if (time[i] < '0' || time[i] > '9') {
-            return TIME_CHAR_ERROR;   // lisää tämä virhekoodi TimeParser.h:hon
+            return TIME_CHAR_ERROR;   
         }
     }
 
@@ -44,5 +45,10 @@ int time_parse(const char *time) {
         return TIME_SEC_ERROR;
     }
 
-    return hh * 3600 + mm * 60 + ss;
+    int total = hh * 3600 + mm * 60 + ss;
+
+     if (total == 0) {
+        return TIME_ZERO_ERROR;
+    }
+     return total;
 }
