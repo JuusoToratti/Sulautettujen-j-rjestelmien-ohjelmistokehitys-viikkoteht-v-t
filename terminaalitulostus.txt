@@ -1,0 +1,38 @@
+Terminal tulostus kaikki testi läpi
+
+PS C:\Users\jusse\embsysdev_examples\4_Unit_testing\build> cmake --build .
+[  8%] Building CXX object CMakeFiles/TimeParser.dir/TimeParser.cpp.obj
+[ 16%] Linking CXX static library libTimeParser.a
+[ 16%] Built target TimeParser
+[ 33%] Built target gtest
+[ 50%] Built target gmock
+[ 66%] Built target gmock_main
+[ 83%] Built target gtest_main
+[ 91%] Building CXX object test_cases/CMakeFiles/TimeParserTest.dir/TimeParserTest.cpp.obj
+[100%] Linking CXX executable C:\Users\jusse\embsysdev_examples\4_Unit_testing\test_program\TimeParserTest.exe
+[100%] Built target TimeParserTest
+PS C:\Users\jusse\embsysdev_examples\4_Unit_testing\build> ..\test_program\TimeParserTest.exe
+Running main() from C:\Users\jusse\embsysdev_examples\4_Unit_testing\googletest\googletest\src\gtest_main.cc
+[==========] Running 7 tests from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 7 tests from TimeParserTests
+[ RUN      ] TimeParserTests.ValidTimes
+[       OK ] TimeParserTests.ValidTimes (0 ms)
+[ RUN      ] TimeParserTests.InvalidLength
+[       OK ] TimeParserTests.InvalidLength (0 ms)
+[ RUN      ] TimeParserTests.NullPointer
+[       OK ] TimeParserTests.NullPointer (0 ms)
+[ RUN      ] TimeParserTests.InvalidHours
+[       OK ] TimeParserTests.InvalidHours (0 ms)
+[ RUN      ] TimeParserTests.InvalidMinutes
+[       OK ] TimeParserTests.InvalidMinutes (0 ms)
+[ RUN      ] TimeParserTests.InvalidSeconds
+[       OK ] TimeParserTests.InvalidSeconds (0 ms)
+[ RUN      ] TimeParserTests.InvalidCharacters
+[       OK ] TimeParserTests.InvalidCharacters (0 ms)
+[----------] 7 tests from TimeParserTests (49 ms total)
+
+[----------] Global test environment tear-down
+[==========] 7 tests from 1 test suite ran. (65 ms total)
+[  PASSED  ] 7 tests.
+PS C:\Users\jusse\embsysdev_examples\4_Unit_testing\build>
