@@ -8,11 +8,11 @@
 #include <string.h>
 #include "seq_parser.h"
 
-/*Lisää toiminnallisuus missä sarjaportin kautta voidaan laittaa debuggitulostukset päälle ja pois. 
+/*Laajenna testausprojektia niin, että teet sinne uuden testisuiten ja siihen liittyvän parserointifunktion ja testikeissit UARTin kautta tuleville liikennevalosekvensseille (esimerksiksi "RYGRYG" tai "R,1000,Y,500,G,1000") riippuen siitä mitä toiminnallisuutta ohjelmassasi on. Testikeisseissä tulisi esim testata ettei liikennevalosekvenssissä ole vääriä merkkejä tai muita virheitä. 
 
-Tämä voidaan tehdä samoin kuin valosekvenssin lukeminen sarjaportista, mutta varataan sitä varten komentokirjain 'D'. 
+Voit tehdä uudet funktiot samoihin testiprojektin tiedostoihin mihin teit aiemmat testikeissit. Jos luot näitä varten omat tiedostot, niin muista muokata cmakelists.txt-tiedostot samalla. 
 
-Tässä täytyy muokata esimerkkikoodia siten, että DEBUG-vakion sijasta käytetäänkin uutta muuttujaa lippuna onko debug päällä vai ei. */
+Lopuksi liitä uusi parserointifunktio liikennevalo-ohjelmaasi.  */
 
 
 
