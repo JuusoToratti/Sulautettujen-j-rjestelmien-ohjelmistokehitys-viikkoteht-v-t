@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot generator="Robot 7.3.2 (Python 3.13.2 on win32)" generated="2025-10-16T09:46:38.248721" rpa="false" schemaversion="5">
+<suite id="s1" name="Time Parser Test" source="C:\ncs\Viikkotehtava5kolmenpisteenarvoinen\src\time_parser_test.robot">
+<kw name="Open UART Connection" type="SETUP">
+<kw name="Open Serial Port">
+<msg time="2025-10-16T09:46:38.329642" level="FAIL">No keyword with name 'Open Serial Port' found.</msg>
+<arg>${PORT}</arg>
+<arg>baudrate=${BAUDRATE}</arg>
+<arg>timeout=${TIMEOUT}</arg>
+<status status="FAIL" start="2025-10-16T09:46:38.329554" elapsed="0.000204">No keyword with name 'Open Serial Port' found.</status>
+</kw>
+<kw name="Sleep" owner="BuiltIn">
+<arg>1s</arg>
+<doc>Pauses the test executed for the given time.</doc>
+<status status="NOT RUN" start="2025-10-16T09:46:38.330059" elapsed="0.000046"/>
+</kw>
+<doc>Avaa sarjaportti ja aseta asetukset</doc>
+<status status="FAIL" start="2025-10-16T09:46:38.320027" elapsed="0.010368">No keyword with name 'Open Serial Port' found.</status>
+</kw>
+<test id="s1-t1" name="Oikea Aika Merkkijono" line="26">
+<doc>Testaa toimivan aikamerkkijonon parsinta</doc>
+<status status="FAIL" start="2025-10-16T09:46:38.330535" elapsed="0.000894">Parent suite setup failed:
+No keyword with name 'Open Serial Port' found.</status>
+</test>
+<test id="s1-t2" name="Virheellinen Sekunti" line="30">
+<doc>Testaa virheellinen aika (sekunnit &gt; 59)</doc>
+<status status="FAIL" start="2025-10-16T09:46:38.337126" elapsed="0.000855">Parent suite setup failed:
+No keyword with name 'Open Serial Port' found.</status>
+</test>
+<kw name="Close All Serial Connections" type="TEARDOWN">
+<msg time="2025-10-16T09:46:38.341833" level="FAIL">No keyword with name 'Close All Serial Connections' found.</msg>
+<status status="FAIL" start="2025-10-16T09:46:38.341781" elapsed="0.000111">No keyword with name 'Close All Serial Connections' found.</status>
+</kw>
+<doc>UART-testit time_parser-funktiolle</doc>
+<status status="FAIL" start="2025-10-16T09:46:38.251174" elapsed="0.090787">Suite setup failed:
+No keyword with name 'Open Serial Port' found.
+
+Also suite teardown failed:
+No keyword with name 'Close All Serial Connections' found.</status>
+</suite>
+<statistics>
+<total>
+<stat pass="0" fail="2" skip="0">All Tests</stat>
+</total>
+<tag>
+</tag>
+<suite>
+<stat name="Time Parser Test" id="s1" pass="0" fail="2" skip="0">Time Parser Test</stat>
+</suite>
+</statistics>
+<errors>
+</errors>
+</robot>

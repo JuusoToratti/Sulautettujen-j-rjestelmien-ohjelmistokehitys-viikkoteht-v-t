@@ -7,12 +7,41 @@
 #include <stdlib.h>
 #include <string.h>
 #include "seq_parser.h"
+#include <ctype.h>
+#include "TimeParser.h"
 
-/*Lisää toiminnallisuus missä sarjaportin kautta voidaan laittaa debuggitulostukset päälle ja pois. 
+/*1p suoritus: Aikamerkkijono robotista
 
-Tämä voidaan tehdä samoin kuin valosekvenssin lukeminen sarjaportista, mutta varataan sitä varten komentokirjain 'D'. 
+Edellisessä viikkotehtävässä toteutettiin liikennevaloihin ajastinkeskeytys käyttäen aikamerkkijonosta parseroitua aikaa. Tehdään nyt sama Robotista käsin, eli pusketaan aikamerkkijonoja UARTtiin ja luetaan UARTin kautta robottille palautettu sekuntiluku tai virhekoodit, eli ne mitä edellisen viikkotehtävän parserifunktio palauttaa. 
 
-Tässä täytyy muokata esimerkkikoodia siten, että DEBUG-vakion sijasta käytetäänkin uutta muuttujaa lippuna onko debug päällä vai ei. */
+Robotti sitten tarkistaa, että olihan palautusarvo testikeississä oletettu. Jos siis annetaan virheellinen merkkijono, niin odotetaan vastauksena sitä vastaavaa virhekoodia. Tässä on vapaus muokata virhekoodeja haluamakseen, eli esimerkiksi negatiivisten arvojen sijasta voi käyttää kirjainkoodeja. Mutta katso ohjevideo. 
+
+Testikeissit vaaditaan sekä oikeelliselle että virheellisille merkkijonolle. 
+
+Esimerkki: 
+Oikeanlainen merkkijono: 000120 -> saadaan 1 minuutti ja 20 sekuntia -> yhteensä 80. Tämä luku 80 palautetaan UARTin kautta robotille. Robotti tarkistaa skriptissä, että onhan luku oikea. 
+Virheellinen merkkijono 001067 -> palautetaan virhekoodi (vaikka -1) robotille (koska sekunteja 67 ei voi olla ). Robotti tarkistaa skriptissä että onhan virhekoodi odotettu -1. 
+
++1p suoritus: Lisätään aikamerkkijonon testikeissejä
+
+Tehdään Robotin skriptiin lisää testikeissejä sen mukaan mitä yksikkötestaustekniikoita edellisessä viikkotehtävässä 5 käytitte. Hox, tässä voi samalla täydentää edellisen tehtävän vastausta!
+
+Jokaisessa testikeisseissä testaa aina sekä 1) oikeellinen suoritus oikeanlaisella aikamerkkijonolla että 2) virheellinen suoritus väärällä aikamerkkijonolla. Samoin kuin aiemmassa viikkotehtävässä. 
+
+Esimerkkejä:
+- tarkista että merkkijono on aina tasan 6 merkkiä pitkä.
+- tarkista että merkkijonon palautusarvo ei ole 0 sekuntia (koska tällöin ajastinkeskeytys olisi turha..)
+- tarkista että merkkijonossa on vain numeroita, katso tätä varten c-kielen dokumentaatiosta funktio isdigit().
+- jne jne
+- (aiemmassa tehtävässä tarkistettiin myös onko aikamerkkijono null, mutta tyhjää merkkijonoa ei taida Robotista pystyä lähettämään..)
+
++1p suoritus: Lisätään sekvenssitestausta
+
+Tehdään Robottiin liikennevalosekvenssien ("RYGRYGRYG"..) testaus, niin että liikennevalo-ohjema tarkistaa, että onhan sekvenssi ok (eli siinä ei ole vääriä merkkejä) ja suorittaa sekvenssin jos kaikki merkit ovat oikein. Jos yksikin merkki on väärin, laite hylkää sekvenssin ja palauttaa robotille virhekoodin. 
+
+Esimerkki: Syötetään UARTTIIN sekvenssi "RYG" -> Robotti testaa että onhan kaikki merkit sallittuja ja suorittaa sekvenssin.
+
+Esimerkki: Syötetään UARTTIIN sekvenssi "RjG" -> Robotti testaa merkkijonon ja huomaa että siinä on väärä merkki j, jolloin palauttaa robotille virhekoodin.  */
 
 
 
@@ -99,6 +128,17 @@ K_THREAD_DEFINE(green_thread,STACKSIZE,green_led_task,NULL,NULL,NULL,PRIORITY,0,
 K_THREAD_DEFINE(yellow_blink_thread,STACKSIZE,yellow_blink_task,NULL,NULL,NULL,PRIORITY,0,0);
 K_THREAD_DEFINE(uart_rx_thread, STACKSIZE, uart_rx_task, NULL, NULL, NULL, PRIORITY, 0, 0);
 K_THREAD_DEFINE(dispatcher_thread, STACKSIZE, dispatcher_task, NULL, NULL, NULL, PRIORITY, 0, 0);
+
+#define TIME_LEN_ERROR   -1
+#define TIME_ZERO_ERROR  -2
+#define TIME_CHAR_ERROR  -3
+#define TIME_HOUR_ERROR  -4
+#define TIME_MIN_ERROR   -5
+#define TIME_SEC_ERROR   -6
+#define SEQ_INVALID_CHAR_ERROR  -7
+#define SEQ_EMPTY_ERROR         -8
+#define SEQ_TOO_LONG_ERROR      -9
+
 
 // ************* Button interrupt handlers *************
 
@@ -502,29 +542,108 @@ void uart_rx_task(void *p1, void *p2, void *p3) {
 char cmd;
 int val;
 
-if (sscanf(buf, "%c,%d", &cmd, &val) >= 1) {
+// --- SEQUENCE TEST MODE ---
+// Jos ensimmäinen merkki on R, Y tai G, käsitellään sekvenssinä
+if (buf[0] == 'R' || buf[0] == 'Y' || buf[0] == 'G') {
+    struct seq_item items[16];
+    int count = 0;
+    int ret = parse_sequence(buf, items, 16, &count);
+    printk("%dX", ret);
+    continue;
+}
 
-    // --- UUSI KOMENTO: S = sekvenssin parserointi ---
-    if (cmd == 'S') {
-        struct seq_item items[16];
-        int count = 0;
-        // ohitetaan "S," ja parsitaan loppu merkkijono
-        int ret = parse_sequence(buf + 2, items, 16, &count);
-        if (ret == 0) {
-            for (int i = 0; i < count; i++) {
-                struct seq_item *copy = k_malloc(sizeof(*copy));
-                if (copy) {
-                    *copy = items[i];
-                    k_fifo_put(&seq_fifo, copy);
-                }
-            }
-            printk("Parsed sequence OK, %d items\n", count);
-        } else {
-            printk("Sequence parse error: %d\n", ret);
-        }
-        continue; // ei jatketa muihin käsittelyihin
+// --- TIME PARSER TEST MODE ---
+int len = strlen(buf);
+
+// --- Tyhjä syöte ---
+if (len == 0) {
+    printk("%dX", SEQ_EMPTY_ERROR);  // -8
+    continue;
+}
+
+// --- Sekvenssit (alkaa R/Y/G) ---
+if (buf[0] == 'R' || buf[0] == 'Y' || buf[0] == 'G') {
+
+    // Liian pitkä sekvenssi
+    if (len > 20) {
+        printk("%dX", SEQ_TOO_LONG_ERROR);  // -9
+        continue;
     }
 
+    struct seq_item items[16];
+    int count = 0;
+    int ret = parse_sequence(buf, items, 16, &count);
+    printk("%dX", ret);
+    continue;
+}
+
+// --- Aikaparseri (vain jos alkaa numerolla) ---
+if (isdigit((unsigned char)buf[0])) {
+
+    // Jos sisältää kirjaimia tai muuta → virhe heti
+    bool all_digits = true;
+    for (int i = 0; i < len; i++) {
+        if (!isdigit((unsigned char)buf[i])) {
+            all_digits = false;
+            break;
+        }
+    }
+    if (!all_digits) {
+        printk("%dX", TIME_CHAR_ERROR);  // -3
+        continue;
+    }
+
+    // Liian lyhyt tai pitkä → virhe ennen nollatarkistusta
+    if (len != 6) {
+        printk("%dX", TIME_LEN_ERROR);  // -1
+        continue;
+    }
+
+    // Nolla-aika
+    if (strcmp(buf, "000000") == 0) {
+        printk("%dX", TIME_ZERO_ERROR);  // -2
+        continue;
+    }
+
+    // Jos kaikki OK → parsitaan
+    int result = time_parse(buf);
+    printk("%dX", result);
+    continue;
+}
+
+// --- Jos mikään yllä ei täsmää ---
+if (len > 20) {
+    printk("%dX", SEQ_TOO_LONG_ERROR);  // -9
+    continue;
+}
+
+printk("%dX", SEQ_INVALID_CHAR_ERROR);  // -7
+continue;
+
+
+if (sscanf(buf, "%c,%d", &cmd, &val) >= 1) {
+
+    // S = sekvenssin parserointi ---
+    if (cmd == 'S') {
+    struct seq_item items[16];
+    int count = 0;
+    int ret = parse_sequence(buf + 2, items, 16, &count);
+
+    if (ret == 0) {
+        for (int i = 0; i < count; i++) {
+            struct seq_item *copy = k_malloc(sizeof(*copy));
+            if (copy) {
+                *copy = items[i];
+                k_fifo_put(&seq_fifo, copy);
+            }
+        }
+        printk("0X");  //   Sekvenssi: Robotti odottaa '0X'
+    } else {
+        printk("%dX", ret);  //  Tulostetaan virhekoodi: esim. -7X, -8X, -9X
+    }
+
+    continue;  // ei jatketa muihin käsittelyihin
+}
     // --- TAVALLINEN KOMENTO ---
     if (sscanf(buf, "%c,%d", &cmd, &val) == 2) {
 
@@ -594,8 +713,8 @@ void dispatcher_task(void *p1, void *p2, void *p3) {
         __ASSERT(item->duration_ms > 0 && item->duration_ms < 60000,
                 "Invalid duration in dispatcher: %d ms", item->duration_ms);
 
-        k_mutex_lock(&disp_mutex, K_FOREVER);
-
+        
+        int ret = k_mutex_lock(&disp_mutex, K_FOREVER);
         __ASSERT(ret == 0, "Failed to lock mutex in dispatcher: %d", ret);
         
         __ASSERT(current_item == NULL, "current_item not NULL when setting new item");

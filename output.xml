@@ -1,0 +1,482 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot generator="Robot 7.3.2 (Python 3.13.2 on win32)" generated="2025-10-18T00:00:32.404780" rpa="false" schemaversion="5">
+<suite id="s1" name="Time Parser Test" source="C:\ncs\Viikkotehtava5kolmenpisteenarvoinen\src\time_parser_test.robot">
+<kw name="Open Port" owner="serial_keywords" type="SETUP">
+<arg>COM9</arg>
+<arg>115200</arg>
+<arg>2</arg>
+<doc>Avaa sarjaportin</doc>
+<status status="PASS" start="2025-10-18T00:00:32.461104" elapsed="0.002304"/>
+</kw>
+<test id="s1-t1" name="Yhteystesti" line="10">
+<kw name="Write Data" owner="serial_keywords">
+<arg>000120\n</arg>
+<doc>Kirjoittaa dataa sarjaporttiin</doc>
+<status status="PASS" start="2025-10-18T00:00:32.464110" elapsed="0.000465"/>
+</kw>
+<kw name="Read Until" owner="serial_keywords">
+<msg time="2025-10-18T00:00:34.560368" level="INFO">${response} = 80X</msg>
+<var>${response}</var>
+<doc>Lukee sarjaportista kunnes tietty merkki saadaan</doc>
+<status status="PASS" start="2025-10-18T00:00:32.464852" elapsed="2.095602"/>
+</kw>
+<kw name="Log To Console" owner="BuiltIn">
+<arg>Vastaanotettu: ${response}</arg>
+<doc>Logs the given message to the console.</doc>
+<status status="PASS" start="2025-10-18T00:00:34.560793" elapsed="0.000394"/>
+</kw>
+<kw name="Should Contain" owner="BuiltIn">
+<arg>${response}</arg>
+<arg>80</arg>
+<doc>Fails if ``container`` does not contain ``item`` one or more times.</doc>
+<status status="PASS" start="2025-10-18T00:00:34.561486" elapsed="0.000170"/>
+</kw>
+<doc>Tarkistaa että yhteys toimii ja portti vastaa</doc>
+<status status="PASS" start="2025-10-18T00:00:32.463588" elapsed="2.098382"/>
+</test>
+<test id="s1-t2" name="Oikea Aika Merkkijono" line="18">
+<kw name="Write Data" owner="serial_keywords">
+<arg>000120\n</arg>
+<doc>Kirjoittaa dataa sarjaporttiin</doc>
+<status status="PASS" start="2025-10-18T00:00:34.563503" elapsed="0.000543"/>
+</kw>
+<kw name="Read Until" owner="serial_keywords">
+<msg time="2025-10-18T00:00:36.654011" level="INFO">${response} = 80X</msg>
+<var>${response}</var>
+<doc>Lukee sarjaportista kunnes tietty merkki saadaan</doc>
+<status status="PASS" start="2025-10-18T00:00:34.564352" elapsed="2.089759"/>
+</kw>
+<kw name="Log To Console" owner="BuiltIn">
+<arg>Vastaanotettu: ${response}</arg>
+<doc>Logs the given message to the console.</doc>
+<status status="PASS" start="2025-10-18T00:00:36.657040" elapsed="0.000663"/>
+</kw>
+<kw name="Should Contain" owner="BuiltIn">
+<arg>${response}</arg>
+<arg>80</arg>
+<doc>Fails if ``container`` does not contain ``item`` one or more times.</doc>
+<status status="PASS" start="2025-10-18T00:00:36.665159" elapsed="0.000269"/>
+</kw>
+<doc>Testaa toimivan aikamerkkijonon parsinta (000120 → 80 sekuntia)</doc>
+<status status="PASS" start="2025-10-18T00:00:34.562959" elapsed="2.102824"/>
+</test>
+<test id="s1-t3" name="Virheellinen Sekunti" line="26">
+<kw name="Write Data" owner="serial_keywords">
+<arg>001067\n</arg>
+<doc>Kirjoittaa dataa sarjaporttiin</doc>
+<status status="PASS" start="2025-10-18T00:00:36.668548" elapsed="0.004479"/>
+</kw>
+<kw name="Read Until" owner="serial_keywords">
+<msg time="2025-10-18T00:00:38.764546" level="INFO">${response} = -6X</msg>
+<var>${response}</var>
+<doc>Lukee sarjaportista kunnes tietty merkki saadaan</doc>
+<status status="PASS" start="2025-10-18T00:00:36.673963" elapsed="2.090867"/>
+</kw>
+<kw name="Log To Console" owner="BuiltIn">
+<arg>Vastaanotettu: ${response}</arg>
+<doc>Logs the given message to the console.</doc>
+<status status="PASS" start="2025-10-18T00:00:38.767472" elapsed="0.000665"/>
+</kw>
+<kw name="Should Contain" owner="BuiltIn">
+<arg>${response}</arg>
+<arg>-6</arg>
+<doc>Fails if ``container`` does not contain ``item`` one or more times.</doc>
+<status status="PASS" start="2025-10-18T00:00:38.775612" elapsed="0.000263"/>
+</kw>
+<doc>Testaa virheellinen aika (sekunnit &gt; 59 → virhekoodi -6)</doc>
+<status status="PASS" start="2025-10-18T00:00:36.667691" elapsed="2.108455"/>
+</test>
+<test id="s1-t4" name="Liian Lyhyt Merkkijono" line="34">
+<kw name="Write Data" owner="serial_keywords">
+<arg>0123\n</arg>
+<doc>Kirjoittaa dataa sarjaporttiin</doc>
+<status status="PASS" start="2025-10-18T00:00:38.778519" elapsed="0.000576"/>
+</kw>
+<kw name="Read Until" owner="serial_keywords">
+<msg time="2025-10-18T00:00:40.858572" level="INFO">${response} = -1X</msg>
+<var>${response}</var>
+<doc>Lukee sarjaportista kunnes tietty merkki saadaan</doc>
+<status status="PASS" start="2025-10-18T00:00:38.782580" elapsed="2.076145"/>
+</kw>
+<kw name="Log To Console" owner="BuiltIn">
+<arg>Vastaanotettu: ${response}</arg>
+<doc>Logs the given message to the console.</doc>
+<status status="PASS" start="2025-10-18T00:00:40.864570" elapsed="0.001171"/>
+</kw>
+<kw name="Should Contain" owner="BuiltIn">
+<arg>${response}</arg>
+<arg>-1</arg>
+<doc>Fails if ``container`` does not contain ``item`` one or more times.</doc>
+<status status="PASS" start="2025-10-18T00:00:40.872427" elapsed="0.000757"/>
+</kw>
+<doc>Testaa että liian lyhyt aikamerkkijono hylätään (pituus &lt; 6)</doc>
+<status status="PASS" start="2025-10-18T00:00:38.777751" elapsed="2.099191"/>
+</test>
+<test id="s1-t5" name="Liian Pitkä Merkkijono" line="42">
+<kw name="Write Data" owner="serial_keywords">
+<arg>0001209\n</arg>
+<doc>Kirjoittaa dataa sarjaporttiin</doc>
+<status status="PASS" start="2025-10-18T00:00:40.889307" elapsed="0.003647"/>
+</kw>
+<kw name="Read Until" owner="serial_keywords">
+<msg time="2025-10-18T00:00:42.915986" level="INFO">${response} = </msg>
+<var>${response}</var>
+<doc>Lukee sarjaportista kunnes tietty merkki saadaan</doc>
+<status status="PASS" start="2025-10-18T00:00:40.895395" elapsed="2.020776"/>
+</kw>
+<kw name="Log To Console" owner="BuiltIn">
+<arg>Vastaanotettu: ${response}</arg>
+<doc>Logs the given message to the console.</doc>
+<status status="PASS" start="2025-10-18T00:00:42.925384" elapsed="0.001124"/>
+</kw>
+<kw name="Should Contain" owner="BuiltIn">
+<msg time="2025-10-18T00:00:42.929606" level="FAIL">'' does not contain '-1'</msg>
+<arg>${response}</arg>
+<arg>-1</arg>
+<doc>Fails if ``container`` does not contain ``item`` one or more times.</doc>
+<status status="FAIL" start="2025-10-18T00:00:42.928766" elapsed="0.002562">'' does not contain '-1'</status>
+</kw>
+<doc>Testaa että liian pitkä aikamerkkijono hylätään (pituus &gt; 6)</doc>
+<status status="FAIL" start="2025-10-18T00:00:40.880903" elapsed="2.053912">'' does not contain '-1'</status>
+</test>
+<test id="s1-t6" name="Nolla Aika" line="50">
+<kw name="Write Data" owner="serial_keywords">
+<arg>000000\n</arg>
+<doc>Kirjoittaa dataa sarjaporttiin</doc>
+<status status="PASS" start="2025-10-18T00:00:42.945897" elapsed="0.005346"/>
+</kw>
+<kw name="Read Until" owner="serial_keywords">
+<msg time="2025-10-18T00:00:45.031491" level="INFO">${response} = -1X</msg>
+<var>${response}</var>
+<doc>Lukee sarjaportista kunnes tietty merkki saadaan</doc>
+<status status="PASS" start="2025-10-18T00:00:42.958381" elapsed="2.073278"/>
+</kw>
+<kw name="Log To Console" owner="BuiltIn">
+<arg>Vastaanotettu: ${response}</arg>
+<doc>Logs the given message to the console.</doc>
+<status status="PASS" start="2025-10-18T00:00:45.041269" elapsed="0.001113"/>
+</kw>
+<kw name="Should Contain" owner="BuiltIn">
+<msg time="2025-10-18T00:00:45.045435" level="FAIL">'-1X' does not contain '-2'</msg>
+<arg>${response}</arg>
+<arg>-2</arg>
+<doc>Fails if ``container`` does not contain ``item`` one or more times.</doc>
+<status status="FAIL" start="2025-10-18T00:00:45.044681" elapsed="0.001082">'-1X' does not contain '-2'</status>
+</kw>
+<doc>Testaa että nolla-aika hylätään (000000 → virhe, koska ajastin turha)</doc>
+<status status="FAIL" start="2025-10-18T00:00:42.944197" elapsed="2.105062">'-1X' does not contain '-2'</status>
+</test>
+<test id="s1-t7" name="Ei Numeroita" line="58">
+<kw name="Write Data" owner="serial_keywords">
+<arg>00A120\n</arg>
+<doc>Kirjoittaa dataa sarjaporttiin</doc>
+<status status="PASS" start="2025-10-18T00:00:45.066296" elapsed="0.001388"/>
+</kw>
+<kw name="Read Until" owner="serial_keywords">
+<msg time="2025-10-18T00:00:47.162097" level="INFO">${response} = -3X</msg>
+<var>${response}</var>
+<doc>Lukee sarjaportista kunnes tietty merkki saadaan</doc>
+<status status="PASS" start="2025-10-18T00:00:45.074366" elapsed="2.087924"/>
+</kw>
+<kw name="Log To Console" owner="BuiltIn">
+<arg>Vastaanotettu: ${response}</arg>
+<doc>Logs the given message to the console.</doc>
+<status status="PASS" start="2025-10-18T00:00:47.176938" elapsed="0.002144"/>
+</kw>
+<kw name="Should Contain" owner="BuiltIn">
+<arg>${response}</arg>
+<arg>-3</arg>
+<doc>Fails if ``container`` does not contain ``item`` one or more times.</doc>
+<status status="PASS" start="2025-10-18T00:00:47.187904" elapsed="0.000685"/>
+</kw>
+<doc>Testaa että merkkijono, jossa on kirjaimia, hylätään (isdigit-filtteri)</doc>
+<status status="PASS" start="2025-10-18T00:00:45.060208" elapsed="2.129017"/>
+</test>
+<test id="s1-t8" name="Virheellinen Minuutti" line="66">
+<kw name="Write Data" owner="serial_keywords">
+<arg>006160\n</arg>
+<doc>Kirjoittaa dataa sarjaporttiin</doc>
+<status status="PASS" start="2025-10-18T00:00:47.204372" elapsed="0.003214"/>
+</kw>
+<kw name="Read Until" owner="serial_keywords">
+<msg time="2025-10-18T00:00:49.291604" level="INFO">${response} = -5X</msg>
+<var>${response}</var>
+<doc>Lukee sarjaportista kunnes tietty merkki saadaan</doc>
+<status status="PASS" start="2025-10-18T00:00:47.208550" elapsed="2.083246"/>
+</kw>
+<kw name="Log To Console" owner="BuiltIn">
+<arg>Vastaanotettu: ${response}</arg>
+<doc>Logs the given message to the console.</doc>
+<status status="PASS" start="2025-10-18T00:00:49.296877" elapsed="0.001269"/>
+</kw>
+<kw name="Should Contain" owner="BuiltIn">
+<arg>${response}</arg>
+<arg>-5</arg>
+<doc>Fails if ``container`` does not contain ``item`` one or more times.</doc>
+<status status="PASS" start="2025-10-18T00:00:49.304713" elapsed="0.000664"/>
+</kw>
+<doc>Testaa virheelliset minuutit (minuutit &gt; 59 → virhekoodi -5)</doc>
+<status status="PASS" start="2025-10-18T00:00:47.194502" elapsed="2.114922"/>
+</test>
+<test id="s1-t9" name="Virheellinen Tunti" line="74">
+<kw name="Write Data" owner="serial_keywords">
+<arg>240000\n</arg>
+<doc>Kirjoittaa dataa sarjaporttiin</doc>
+<status status="PASS" start="2025-10-18T00:00:49.321430" elapsed="0.004133"/>
+</kw>
+<kw name="Read Until" owner="serial_keywords">
+<msg time="2025-10-18T00:00:51.405111" level="INFO">${response} = -4X</msg>
+<var>${response}</var>
+<doc>Lukee sarjaportista kunnes tietty merkki saadaan</doc>
+<status status="PASS" start="2025-10-18T00:00:49.327859" elapsed="2.077424"/>
+</kw>
+<kw name="Log To Console" owner="BuiltIn">
+<arg>Vastaanotettu: ${response}</arg>
+<doc>Logs the given message to the console.</doc>
+<status status="PASS" start="2025-10-18T00:00:51.410645" elapsed="0.001199"/>
+</kw>
+<kw name="Should Contain" owner="BuiltIn">
+<arg>${response}</arg>
+<arg>-4</arg>
+<doc>Fails if ``container`` does not contain ``item`` one or more times.</doc>
+<status status="PASS" start="2025-10-18T00:00:51.418675" elapsed="0.000751"/>
+</kw>
+<doc>Testaa virheelliset tunnit (tunnit &gt; 23 → virhekoodi -4)</doc>
+<status status="PASS" start="2025-10-18T00:00:49.313344" elapsed="2.109989"/>
+</test>
+<test id="s1-t10" name="Yhdistelmävirhe" line="82">
+<kw name="Write Data" owner="serial_keywords">
+<arg>00A1208\n</arg>
+<doc>Kirjoittaa dataa sarjaporttiin</doc>
+<status status="PASS" start="2025-10-18T00:00:51.434910" elapsed="0.003759"/>
+</kw>
+<kw name="Read Until" owner="serial_keywords">
+<msg time="2025-10-18T00:00:53.471190" level="INFO">${response} = </msg>
+<var>${response}</var>
+<doc>Lukee sarjaportista kunnes tietty merkki saadaan</doc>
+<status status="PASS" start="2025-10-18T00:00:51.440928" elapsed="2.030448"/>
+</kw>
+<kw name="Log To Console" owner="BuiltIn">
+<arg>Vastaanotettu: ${response}</arg>
+<doc>Logs the given message to the console.</doc>
+<status status="PASS" start="2025-10-18T00:00:53.476484" elapsed="0.001196"/>
+</kw>
+<kw name="Should Contain" owner="BuiltIn">
+<msg time="2025-10-18T00:00:53.484994" level="FAIL">'' does not contain '-3'</msg>
+<arg>${response}</arg>
+<arg>-3</arg>
+<doc>Fails if ``container`` does not contain ``item`` one or more times.</doc>
+<status status="FAIL" start="2025-10-18T00:00:53.484228" elapsed="0.001030">'' does not contain '-3'</status>
+</kw>
+<doc>Testaa moninkertainen virhe (sekä kirjaimia että liian pitkä)</doc>
+<status status="FAIL" start="2025-10-18T00:00:51.427282" elapsed="2.058946">'' does not contain '-3'</status>
+</test>
+<test id="s1-t11" name="Oikeellinen Raja-Arvo 1" line="90">
+<kw name="Write Data" owner="serial_keywords">
+<arg>235959\n</arg>
+<doc>Kirjoittaa dataa sarjaporttiin</doc>
+<status status="PASS" start="2025-10-18T00:00:53.502552" elapsed="0.004063"/>
+</kw>
+<kw name="Read Until" owner="serial_keywords">
+<msg time="2025-10-18T00:00:55.599547" level="INFO">${response} = -3X</msg>
+<var>${response}</var>
+<doc>Lukee sarjaportista kunnes tietty merkki saadaan</doc>
+<status status="PASS" start="2025-10-18T00:00:53.508874" elapsed="2.090836"/>
+</kw>
+<kw name="Log To Console" owner="BuiltIn">
+<arg>Vastaanotettu: ${response}</arg>
+<doc>Logs the given message to the console.</doc>
+<status status="PASS" start="2025-10-18T00:00:55.604471" elapsed="0.000937"/>
+</kw>
+<kw name="Should Contain" owner="BuiltIn">
+<msg time="2025-10-18T00:00:55.613522" level="FAIL">'-3X' does not contain '86399'</msg>
+<arg>${response}</arg>
+<arg>86399</arg>
+<doc>Fails if ``container`` does not contain ``item`` one or more times.</doc>
+<status status="FAIL" start="2025-10-18T00:00:55.612345" elapsed="0.002324">'-3X' does not contain '86399'</status>
+</kw>
+<doc>Testaa suurin mahdollinen validi aika (235959 → 86399 sekuntia)</doc>
+<status status="FAIL" start="2025-10-18T00:00:53.500748" elapsed="2.117382">'-3X' does not contain '86399'</status>
+</test>
+<test id="s1-t12" name="Oikeellinen Raja-Arvo 2" line="98">
+<kw name="Write Data" owner="serial_keywords">
+<arg>000001\n</arg>
+<doc>Kirjoittaa dataa sarjaporttiin</doc>
+<status status="PASS" start="2025-10-18T00:00:55.635075" elapsed="0.001081"/>
+</kw>
+<kw name="Read Until" owner="serial_keywords">
+<msg time="2025-10-18T00:00:57.724506" level="INFO">${response} = 1X</msg>
+<var>${response}</var>
+<doc>Lukee sarjaportista kunnes tietty merkki saadaan</doc>
+<status status="PASS" start="2025-10-18T00:00:55.638056" elapsed="2.086600"/>
+</kw>
+<kw name="Log To Console" owner="BuiltIn">
+<arg>Vastaanotettu: ${response}</arg>
+<doc>Logs the given message to the console.</doc>
+<status status="PASS" start="2025-10-18T00:00:57.736906" elapsed="0.001104"/>
+</kw>
+<kw name="Should Contain" owner="BuiltIn">
+<arg>${response}</arg>
+<arg>1</arg>
+<doc>Fails if ``container`` does not contain ``item`` one or more times.</doc>
+<status status="PASS" start="2025-10-18T00:00:57.740725" elapsed="0.000685"/>
+</kw>
+<kw name="Oikea Sekvenssi">
+<msg time="2025-10-18T00:00:57.747043" level="FAIL">No keyword with name 'Oikea Sekvenssi' found.</msg>
+<status status="FAIL" start="2025-10-18T00:00:57.746893" elapsed="0.000334">No keyword with name 'Oikea Sekvenssi' found.</status>
+</kw>
+<error>
+<value>[Documentation]</value>
+<status status="NOT RUN" start="2025-10-18T00:00:57.747986" elapsed="0.000107"/>
+</error>
+<kw name="Write Data" owner="serial_keywords">
+<arg>RYGRYG\n</arg>
+<doc>Kirjoittaa dataa sarjaporttiin</doc>
+<status status="NOT RUN" start="2025-10-18T00:00:57.748959" elapsed="0.000099"/>
+</kw>
+<kw name="Read Until" owner="serial_keywords">
+<var>${response}</var>
+<doc>Lukee sarjaportista kunnes tietty merkki saadaan</doc>
+<status status="NOT RUN" start="2025-10-18T00:00:57.749883" elapsed="0.000113"/>
+</kw>
+<kw name="Log To Console" owner="BuiltIn">
+<arg>Vastaanotettu: ${response}</arg>
+<doc>Logs the given message to the console.</doc>
+<status status="NOT RUN" start="2025-10-18T00:00:57.750824" elapsed="0.000107"/>
+</kw>
+<kw name="Should Contain" owner="BuiltIn">
+<arg>${response}</arg>
+<arg>OK</arg>
+<doc>Fails if ``container`` does not contain ``item`` one or more times.</doc>
+<status status="NOT RUN" start="2025-10-18T00:00:57.752552" elapsed="0.000100"/>
+</kw>
+<doc>Testaa pienin mahdollinen validi aika (000001 → 1 sekunti)</doc>
+<status status="FAIL" start="2025-10-18T00:00:55.629391" elapsed="2.124560">No keyword with name 'Oikea Sekvenssi' found.</status>
+</test>
+<test id="s1-t13" name="Virheellinen Sekvenssi" line="113">
+<kw name="Write Data" owner="serial_keywords">
+<arg>RjG\n</arg>
+<doc>Kirjoittaa dataa sarjaporttiin</doc>
+<status status="PASS" start="2025-10-18T00:00:57.763910" elapsed="0.001315"/>
+</kw>
+<kw name="Read Until" owner="serial_keywords">
+<msg time="2025-10-18T00:00:59.824618" level="INFO">${response} = -7X-7X</msg>
+<var>${response}</var>
+<doc>Lukee sarjaportista kunnes tietty merkki saadaan</doc>
+<status status="PASS" start="2025-10-18T00:00:57.767440" elapsed="2.057365"/>
+</kw>
+<kw name="Log To Console" owner="BuiltIn">
+<arg>Vastaanotettu: ${response}</arg>
+<doc>Logs the given message to the console.</doc>
+<status status="PASS" start="2025-10-18T00:00:59.836236" elapsed="0.001115"/>
+</kw>
+<kw name="Should Contain" owner="BuiltIn">
+<arg>${response}</arg>
+<arg>-7</arg>
+<doc>Fails if ``container`` does not contain ``item`` one or more times.</doc>
+<status status="PASS" start="2025-10-18T00:00:59.839689" elapsed="0.000646"/>
+</kw>
+<doc>Testaa virheellinen sekvenssi (sisältää kielletyn merkin)</doc>
+<status status="PASS" start="2025-10-18T00:00:57.761854" elapsed="2.081250"/>
+</test>
+<test id="s1-t14" name="Tyhjä Sekvenssi" line="120">
+<kw name="Write Data" owner="serial_keywords">
+<arg>\n</arg>
+<doc>Kirjoittaa dataa sarjaporttiin</doc>
+<status status="PASS" start="2025-10-18T00:00:59.854912" elapsed="0.003852"/>
+</kw>
+<kw name="Read Until" owner="serial_keywords">
+<msg time="2025-10-18T00:01:01.879149" level="INFO">${response} = -8X</msg>
+<var>${response}</var>
+<doc>Lukee sarjaportista kunnes tietty merkki saadaan</doc>
+<status status="PASS" start="2025-10-18T00:00:59.861084" elapsed="2.018250"/>
+</kw>
+<kw name="Log To Console" owner="BuiltIn">
+<arg>Vastaanotettu: ${response}</arg>
+<doc>Logs the given message to the console.</doc>
+<status status="PASS" start="2025-10-18T00:01:01.884566" elapsed="0.001171"/>
+</kw>
+<kw name="Should Contain" owner="BuiltIn">
+<arg>${response}</arg>
+<arg>-8</arg>
+<doc>Fails if ``container`` does not contain ``item`` one or more times.</doc>
+<status status="PASS" start="2025-10-18T00:01:01.892443" elapsed="0.000669"/>
+</kw>
+<doc>Testaa että tyhjä sekvenssi hylätään</doc>
+<status status="PASS" start="2025-10-18T00:00:59.853073" elapsed="2.044381"/>
+</test>
+<test id="s1-t15" name="Liian Pitkä Sekvenssi" line="127">
+<kw name="Write Data" owner="serial_keywords">
+<arg>RYGRYGRYGRYGRYGRYGRYG\n</arg>
+<doc>Kirjoittaa dataa sarjaporttiin</doc>
+<status status="PASS" start="2025-10-18T00:01:01.908932" elapsed="0.004168"/>
+</kw>
+<kw name="Read Until" owner="serial_keywords">
+<msg time="2025-10-18T00:01:03.941694" level="INFO">${response} = </msg>
+<var>${response}</var>
+<doc>Lukee sarjaportista kunnes tietty merkki saadaan</doc>
+<status status="PASS" start="2025-10-18T00:01:01.918630" elapsed="2.023225"/>
+</kw>
+<kw name="Log To Console" owner="BuiltIn">
+<arg>Vastaanotettu: ${response}</arg>
+<doc>Logs the given message to the console.</doc>
+<status status="PASS" start="2025-10-18T00:01:03.951569" elapsed="0.001093"/>
+</kw>
+<kw name="Should Contain" owner="BuiltIn">
+<msg time="2025-10-18T00:01:03.955746" level="FAIL">'' does not contain '-9'</msg>
+<arg>${response}</arg>
+<arg>-9</arg>
+<doc>Fails if ``container`` does not contain ``item`` one or more times.</doc>
+<status status="FAIL" start="2025-10-18T00:01:03.955033" elapsed="0.000978">'' does not contain '-9'</status>
+</kw>
+<kw name="Oikea Sekvenssi">
+<status status="NOT RUN" start="2025-10-18T00:01:03.956982" elapsed="0.000107"/>
+</kw>
+<error>
+<value>[Documentation]</value>
+<status status="NOT RUN" start="2025-10-18T00:01:03.959990" elapsed="0.000087"/>
+</error>
+<kw name="Write Data" owner="serial_keywords">
+<arg>S,RYG\n</arg>
+<doc>Kirjoittaa dataa sarjaporttiin</doc>
+<status status="NOT RUN" start="2025-10-18T00:01:03.960741" elapsed="0.000079"/>
+</kw>
+<kw name="Read Until" owner="serial_keywords">
+<var>${response}</var>
+<doc>Lukee sarjaportista kunnes tietty merkki saadaan</doc>
+<status status="NOT RUN" start="2025-10-18T00:01:03.961385" elapsed="0.000059"/>
+</kw>
+<kw name="Log To Console" owner="BuiltIn">
+<arg>Vastaanotettu: ${response}</arg>
+<doc>Logs the given message to the console.</doc>
+<status status="NOT RUN" start="2025-10-18T00:01:03.961999" elapsed="0.000073"/>
+</kw>
+<kw name="Should Contain" owner="BuiltIn">
+<arg>${response}</arg>
+<arg>0</arg>
+<doc>Fails if ``container`` does not contain ``item`` one or more times.</doc>
+<status status="NOT RUN" start="2025-10-18T00:01:03.963220" elapsed="0.000061"/>
+</kw>
+<doc>Testaa että liian pitkä sekvenssi hylätään (yli 20 merkkiä)</doc>
+<status status="FAIL" start="2025-10-18T00:01:01.901276" elapsed="2.062691">'' does not contain '-9'</status>
+</test>
+<kw name="Close Port" owner="serial_keywords" type="TEARDOWN">
+<doc>Sulkee sarjaportin</doc>
+<status status="PASS" start="2025-10-18T00:01:03.970362" elapsed="0.004980"/>
+</kw>
+<doc>UART-testit time_parser-funktiolle</doc>
+<status status="FAIL" start="2025-10-18T00:00:32.407335" elapsed="31.568170"/>
+</suite>
+<statistics>
+<total>
+<stat pass="9" fail="6" skip="0">All Tests</stat>
+</total>
+<tag>
+</tag>
+<suite>
+<stat name="Time Parser Test" id="s1" pass="9" fail="6" skip="0">Time Parser Test</stat>
+</suite>
+</statistics>
+<errors>
+</errors>
+</robot>
